@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}실시간 영상{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+    <h1>실시간 영상</h1>
+</div>
+
+<div class="video-page">
+    <div class="video-section-title">실시간 모니터링</div>
+    <div class="video-box">카메라 연결 대기 중</div>
+
+    <div class="video-section-title">영상 돌려보기</div>
+    <div class="slot-grid" id="video-slot-grid">
+        {% for slot in slots %}
+            <button type="button" class="slot-btn{% if loop.first %} selected{% endif %}" data-slot="{{ slot }}">{{ slot }}</button>
+        {% endfor %}
+    </div>
+    <div class="video-box">저장된 영상 없음</div>
+    <input class="video-scrubber" type="range" min="0" max="100" value="100">
+    <div class="video-scrubber-labels">
+        <span>1hr</span><span>45m</span><span>30m</span><span>15m</span><span>now</span>
+    </div>
+</div>
+{% endblock %}

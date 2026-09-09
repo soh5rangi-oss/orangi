@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}회원가입{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('splash') }}">&#8249;</a>
+    <h1>회원가입</h1>
+</div>
+<div class="form-wrap">
+    <form method="POST" action="{{ url_for('signup') }}">
+        <div class="field">
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" placeholder="홍길동" value="{{ name or '' }}" required>
+        </div>
+        <div class="field">
+            <label for="password">비밀번호</label>
+            <div class="password-field">
+                <input type="password" id="password" name="password" placeholder="비밀번호" required>
+                <span class="toggle-pw" data-target="password">👁️</span>
+            </div>
+        </div>
+        <div class="field">
+            <label for="email">이메일 주소</label>
+            <input type="email" id="email" name="email" placeholder="example@example.com" value="{{ email or '' }}" required>
+        </div>
+        <div class="field">
+            <label for="phone">전화번호</label>
+            <input type="text" id="phone" name="phone" placeholder="010-1234-5678" value="{{ phone or '' }}" required>
+        </div>
+        <div class="field">
+            <label for="birthdate">생년월일</label>
+            <input type="date" id="birthdate" name="birthdate" value="{{ birthdate or '' }}" required>
+        </div>
+        <button type="submit" class="btn-primary" style="border:none;">회원가입</button>
+    </form>
+    <div class="form-footer">
+        계정이 있나요? <a href="{{ url_for('login') }}">로그인</a>
+    </div>
+</div>
+{% endblock %}

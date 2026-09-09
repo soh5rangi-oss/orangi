@@ -1,0 +1,17 @@
+<div class="slot-title">지난 수면 패턴</div>
+<div class="slot-grid" id="slot-grid">
+    {% for slot in slots %}
+        <button type="button" class="slot-btn{% if loop.first %} selected{% endif %}" data-slot="{{ slot }}">{{ slot }}</button>
+    {% endfor %}
+</div>
+
+<div class="sleep-summary" id="slot-detail" style="margin-top:14px;">
+    <div class="row"><span class="label">호흡</span><span class="value" data-field="breath"></span></div>
+    <div class="row"><span class="label">수면 상태</span><span class="value" data-field="sleep_state"></span></div>
+    <div class="row"><span class="label">자세</span><span class="value" data-field="posture"></span></div>
+    <div class="row"><span class="label">얼굴 상태</span><span class="value" data-field="face_state"></span></div>
+    <div class="row"><span class="label">움직임</span><span class="value" data-field="movement"></span></div>
+    <div class="row"><span class="label">위험도</span><span class="value" data-field="risk_text" data-risk-value></span></div>
+</div>
+
+<script id="sleep-history-data" type="application/json">{{ history|tojson }}</script>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}지난 수면 기록 보기{% endblock %}
+
+{% block content %}
+<div class="record-header">
+    <div class="record-header-top">
+        <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+        <h1>지난 수면 기록 보기</h1>
+    </div>
+    <p class="record-guide">원하는 달 선택 &rarr; 원하는 날짜 선택</p>
+    <p class="record-guide small">유아의 지난 수면 패턴과 체온 그래프 확인 가능</p>
+</div>
+
+<div class="month-select-row">
+    <a href="{{ url_for('sleep_record', year=prev_year, month=prev_month) }}">&#8249;</a>
+    <span class="month-label">날짜 선택</span>
+    <span>{{ month }}월</span>
+    <a href="{{ url_for('sleep_record', year=next_year, month=next_month) }}">&#8250;</a>
+</div>
+
+<div class="calendar-grid">
+    <div class="calendar-weekdays">
+        <span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span><span>SUN</span>
+    </div>
+    {% for week in weeks %}
+        <div class="calendar-days">
+            {% for day in week %}
+                {% if day == 0 %}
+                    <span class="empty"></span>
+                {% else %}
+                    {% set date_str = "%04d-%02d-%02d"|format(year, month, day) %}
+                    <a
+                        href="{{ url_for('sleep_record_detail', date_str=date_str) }}"
+                        class="{% if year == today.year and month == today.month and day == today.day %}today{% endif %}"
+                    >{{ day }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

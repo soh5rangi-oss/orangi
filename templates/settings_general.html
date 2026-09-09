@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}일반 설정{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('settings') }}">&#8249;</a>
+    <h1>일반 설정</h1>
+</div>
+
+<div class="settings-list" style="margin-top:18px;">
+    <a class="settings-item" href="{{ url_for('settings_notifications') }}">
+        <span class="settings-icon">🔔</span>알림<span class="chevron">&rsaquo;</span>
+    </a>
+    <a class="settings-item" href="{{ url_for('settings_password') }}">
+        <span class="settings-icon">🔑</span>비밀번호 변경<span class="chevron">&rsaquo;</span>
+    </a>
+    <a class="settings-item" href="{{ url_for('settings_withdraw') }}">
+        <span class="settings-icon">👤</span>회원탈퇴<span class="chevron">&rsaquo;</span>
+    </a>
+</div>
+{% endblock %}

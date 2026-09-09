@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('first_aid') }}">&#8249;</a>
+    <h1>{{ title }}</h1>
+</div>
+
+<div class="aid-page">
+    {% if symptoms %}
+        <div class="aid-section-title"><span class="radio"></span>증상</div>
+        <div class="aid-box">
+            <ul>
+                {% for symptom in symptoms %}
+                    <li>{{ symptom }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <div class="aid-section-title"><span class="radio"></span>응급처치</div>
+    <div class="aid-box filled">
+        <ol>
+            {% for step in steps %}
+                <li>{{ step }}</li>
+            {% endfor %}
+        </ol>
+    </div>
+
+    {% if note %}
+        <div class="aid-note">* 주의 : {{ note }}</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}실시간 수면 패턴{% endblock %}
+
+{% block content %}
+<div class="sleep-header-gradient">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+
+    <div class="temp-title-pill">실시간 수면 패턴</div>
+
+    <div class="sleep-summary">
+        <div class="row"><span class="label">호흡</span><span class="value">{{ breath }}</span></div>
+        <div class="row"><span class="label">수면 상태</span><span class="value">{{ sleep_state }}</span></div>
+        <div class="row"><span class="label">자세</span><span class="value">{{ posture }}</span></div>
+        <div class="row"><span class="label">얼굴 상태</span><span class="value">{{ face_state }}</span></div>
+        <div class="row"><span class="label">움직임</span><span class="value">{{ movement }}</span></div>
+        <div class="row"><span class="label">위험도</span><span class="value {{ risk_level }}">{{ risk_text }}</span></div>
+    </div>
+</div>
+
+<div class="sleep-body-white sleep-page">
+    {% include "_slot_history.html" %}
+</div>
+{% endblock %}

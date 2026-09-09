@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}MY 프로필{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+    <h1>MY 프로필</h1>
+</div>
+
+<div class="profile-card">
+    <div class="profile-avatar">
+        {% if user.photo %}
+            <img src="{{ url_for('static', filename=user.photo) }}" alt="">
+        {% else %}
+            👤
+        {% endif %}
+    </div>
+    <div class="profile-info">
+        <div class="name">{{ user.name }}</div>
+        <div class="contact">{{ user.phone }}</div>
+        <div class="contact">{{ user.email }}</div>
+    </div>
+</div>
+
+<div class="settings-list">
+    <a class="settings-item" href="{{ url_for('settings_profile') }}">
+        <span class="settings-icon">👤</span>프로필 변경<span class="chevron">&rsaquo;</span>
+    </a>
+    <a class="settings-item" href="{{ url_for('settings_general') }}">
+        <span class="settings-icon">⚙️</span>일반 설정<span class="chevron">&rsaquo;</span>
+    </a>
+    <button type="button" class="settings-item" data-open-overlay="logout-overlay">
+        <span class="settings-icon">🚪</span>로그아웃
+    </button>
+</div>
+
+<div class="confirm-overlay" id="logout-overlay">
+    <div class="confirm-sheet">
+        <p>로그아웃 하시겠습니까?</p>
+        <div class="actions">
+            <button type="button" class="btn-no" data-close-overlay>아니오</button>
+            <a class="btn-yes" href="{{ url_for('logout') }}">예</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

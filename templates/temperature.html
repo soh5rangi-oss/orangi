@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}실시간 체온{% endblock %}
+
+{% block content %}
+<div class="temp-header-gradient">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+
+    <div class="temp-title-pill">실시간 체온</div>
+
+    <div class="temp-card">
+        <svg class="temp-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 26 L16 16 L22 26 Z" fill="#ff5a5a"/>
+            <rect x="14" y="26" width="4" height="10" rx="2" fill="#ff5a5a"/>
+            <rect x="14" y="40" width="4" height="10" rx="2" fill="#5b6bdb"/>
+            <path d="M10 50 L16 60 L22 50 Z" fill="#5b6bdb"/>
+            <rect x="26" y="4" width="14" height="48" rx="7" fill="#dcdcec"/>
+            <rect x="29" y="28" width="8" height="21" rx="4" fill="#ff4d4d"/>
+            <circle cx="50" cy="18" r="2.5" fill="#14067b"/>
+            <circle cx="50" cy="28" r="2.5" fill="#14067b"/>
+            <circle cx="50" cy="38" r="2.5" fill="#14067b"/>
+        </svg>
+        <div class="temp-value" id="temp-value">{{ temp }}&deg;</div>
+    </div>
+
+    <div class="temp-status-row">
+        <div class="temp-level-pill">현재 <span class="level-word {{ level }}" id="temp-level-word">{{ label }}</span> 체온 유지 중</div>
+        <div class="temp-ranges">
+            정상: 36.5~37.4&deg;C<br>
+            미열: 37.5~37.9&deg;C<br>
+            발열: 38.0&deg;C 이상<br>
+            고열: 39.0&deg;C 이상
+        </div>
+    </div>
+</div>
+
+<div class="temp-body-white">
+    <div class="temp-chart-title">최근 1시간 변화</div>
+    <div class="temp-chart">
+        <div class="chart-yaxis">
+            <span class="axis-title">온도</span>
+            <span>40</span>
+            <span>39</span>
+            <span>38</span>
+            <span>37</span>
+            <span>36</span>
+            <span>35</span>
+        </div>
+        <div class="chart-plot">
+            <div class="chart-bars" id="chart-bars">
+                {% for point in history %}
+                    <div class="bar-wrap">
+                        <div class="bar" style="height: {{ point.percent }}%;"></div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="chart-xaxis">
+                <div class="chart-xaxis-labels" id="chart-xaxis-labels">
+                    {% for point in history %}
+                        <span>{{ point.label }}</span>
+                    {% endfor %}
+                </div>
+                <span class="unit-label">분(minute)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var POLL_MS = 5000;
+
+    var tempValueEl = document.getElementById("temp-value");
+    var levelWordEl = document.getElementById("temp-level-word");
+    var chartBarsEl = document.getElementById("chart-bars");
+    var xaxisLabelsEl = document.getElementById("chart-xaxis-labels");
+
+    function render(data) {
+        tempValueEl.innerHTML = data.temp + "&deg;";
+
+        levelWordEl.textContent = data.label;
+        levelWordEl.className = "level-word " + data.level;
+
+        chartBarsEl.innerHTML = "";
+        xaxisLabelsEl.innerHTML = "";
+        data.history.forEach(function (point) {
+            var wrap = document.createElement("div");
+            wrap.className = "bar-wrap";
+            var bar = document.createElement("div");
+            bar.className = "bar";
+            bar.style.height = point.percent + "%";
+            wrap.appendChild(bar);
+            chartBarsEl.appendChild(wrap);
+
+            var span = document.createElement("span");
+            span.textContent = point.label;
+            xaxisLabelsEl.appendChild(span);
+        });
+    }
+
+    function poll() {
+        fetch("{{ url_for('temperature_data') }}", { credentials: "same-origin" })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) { if (data) render(data); })
+            .catch(function () {});
+    }
+
+    setInterval(poll, POLL_MS);
+})();
+</script>
+{% endblock %}

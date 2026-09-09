@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}응급처치{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+    <h1>응급처치</h1>
+</div>
+
+<div class="first-aid-list">
+    {% for item in items %}
+        <a class="first-aid-btn" href="{{ url_for('first_aid_detail', slug=item.slug) }}">
+            <span class="icon">{{ item.icon }}</span>
+            <span>{{ item.title }}</span>
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

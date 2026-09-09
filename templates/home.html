@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}홈{% endblock %}
+
+{% block content %}
+<div class="home-topbar">
+    <div class="icons">
+        <a href="{{ url_for('notifications') }}">🔔</a>
+    </div>
+    <div class="user">👤 {{ user_name }}</div>
+</div>
+
+<div class="status-card">
+    <div class="status-label">현재 수면 상태</div>
+    <div class="status-row">
+        <div class="temp">
+            🌡️ <span id="home-temp-value">{{ temp }}</span><span class="unit">℃</span>
+        </div>
+        <div class="risk">
+            🌙👶
+            <div class="risk-label">
+                <span class="dot {{ risk_level }}"></span> 위험도 : {{ risk_text }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="ai-note">{{ llm }}</div>
+
+<div class="menu-title">Menu</div>
+<div class="menu-grid">
+    <a class="menu-tile" href="{{ url_for('temperature') }}"><span class="menu-icon">🌡️</span>체온</a>
+    <a class="menu-tile" href="{{ url_for('sleep_pattern') }}"><span class="menu-icon">🛌</span>수면 패턴</a>
+    <a class="menu-tile" href="{{ url_for('live_video') }}"><span class="menu-icon">📹</span>실시간 영상</a>
+    <a class="menu-tile" href="{{ url_for('sleep_record') }}"><span class="menu-icon">📋</span>수면 기록</a>
+    <a class="menu-tile" href="{{ url_for('first_aid') }}"><span class="menu-icon">🚑</span>응급처치</a>
+    <a class="menu-tile" href="{{ url_for('settings') }}"><span class="menu-icon">⚙️</span>설정</a>
+</div>
+
+<div class="form-footer" style="margin-bottom:20px;">
+    <a href="{{ url_for('logout') }}">로그아웃</a>
+</div>
+
+<script>
+(function () {
+    var tempValueEl = document.getElementById("home-temp-value");
+
+    function poll() {
+        fetch("{{ url_for('temperature_data') }}", { credentials: "same-origin" })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) { if (data) tempValueEl.textContent = data.temp; })
+            .catch(function () {});
+    }
+
+    setInterval(poll, 5000);
+})();
+</script>
+{% endblock %}

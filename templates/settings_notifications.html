@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}알림 설정{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('settings_general') }}">&#8249;</a>
+    <h1>알림 설정</h1>
+</div>
+
+<form method="POST" class="toggle-list">
+    <div class="toggle-row">
+        <span>일반 알림</span>
+        <label class="switch">
+            <input type="checkbox" name="general" onchange="this.form.submit()" {% if settings.general %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="toggle-row">
+        <span>소리</span>
+        <label class="switch">
+            <input type="checkbox" name="sound" onchange="this.form.submit()" {% if settings.sound %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="toggle-row">
+        <span>진동</span>
+        <label class="switch">
+            <input type="checkbox" name="vibrate" onchange="this.form.submit()" {% if settings.vibrate %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="toggle-row">
+        <span>수면 패턴 이상 알림</span>
+        <label class="switch">
+            <input type="checkbox" name="sleep_alert" onchange="this.form.submit()" {% if settings.sleep_alert %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="toggle-row">
+        <span>체온 상승 알림</span>
+        <label class="switch">
+            <input type="checkbox" name="temp_alert" onchange="this.form.submit()" {% if settings.temp_alert %}checked{% endif %}>
+            <span class="slider"></span>
+        </label>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}프로필 변경{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('settings') }}">&#8249;</a>
+    <h1>프로필 변경</h1>
+</div>
+
+<div class="form-wrap">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="profile-avatar-edit">
+            <label class="profile-avatar" for="photo-input">
+                {% if user.photo %}
+                    <img src="{{ url_for('static', filename=user.photo) }}" alt="">
+                {% else %}
+                    👤
+                {% endif %}
+                <span class="avatar-edit-badge">📎</span>
+            </label>
+            <input type="file" id="photo-input" name="photo" accept="image/*" style="display:none;">
+        </div>
+
+        <div class="field">
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" value="{{ user.name }}" required>
+        </div>
+        <div class="field">
+            <label for="phone">전화번호</label>
+            <input type="text" id="phone" name="phone" value="{{ user.phone or '' }}">
+        </div>
+        <div class="field">
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" value="{{ user.email }}" required>
+        </div>
+        <div class="field">
+            <label for="birthdate">생년월일</label>
+            <input type="date" id="birthdate" name="birthdate" value="{{ user.birthdate or '' }}">
+        </div>
+        <button type="submit" class="btn-primary" style="border:none;">프로필 변경</button>
+    </form>
+</div>
+{% endblock %}

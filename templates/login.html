@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}로그인{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('splash') }}">&#8249;</a>
+    <h1>로그인</h1>
+</div>
+<div class="form-wrap">
+    <div class="welcome">Welcome</div>
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="field">
+            <label for="identifier">이메일</label>
+            <input type="text" id="identifier" name="identifier" placeholder="example@example.com" value="{{ identifier or '' }}" required>
+        </div>
+        <div class="field">
+            <label for="password">비밀번호</label>
+            <div class="password-field">
+                <input type="password" id="password" name="password" placeholder="비밀번호" required>
+                <span class="toggle-pw" data-target="password">👁️</span>
+            </div>
+        </div>
+        <a class="forgot" href="#">비밀번호 잊기</a>
+        <button type="submit" class="btn-primary" style="border:none;">로그인</button>
+    </form>
+    <div class="form-footer">
+        계정이 필요하세요? <a href="{{ url_for('signup') }}">회원가입</a>
+    </div>
+</div>
+{% endblock %}

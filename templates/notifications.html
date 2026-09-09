@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}알림{% endblock %}
+
+{% block content %}
+<div class="top-header">
+    <a class="back-link" href="{{ url_for('home') }}">&#8249;</a>
+    <h1>알림</h1>
+</div>
+
+<div class="notif-list">
+    {% for group, items in grouped %}
+        <div class="notif-group-title">{{ group }}</div>
+        {% for item in items %}
+            <div class="notif-item">
+                <div class="notif-icon">{{ item.icon }}</div>
+                <div class="notif-body">
+                    <div class="notif-title">{{ item.title }}</div>
+                    <div class="notif-desc">{{ item.desc }}</div>
+                </div>
+                <div class="notif-time">{{ item.time }}</div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+{% endblock %}

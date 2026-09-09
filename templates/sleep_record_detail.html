@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}날짜 선택{% endblock %}
+
+{% block content %}
+<div class="record-header">
+    <div class="record-header-top">
+        <a class="back-link" href="{{ url_for('sleep_record') }}">&#8249;</a>
+        <h1>날짜 선택</h1>
+        <span style="margin-left:auto;font-size:13px;">{{ selected.month }}월</span>
+    </div>
+    <div class="date-strip">
+        <a class="arrow" href="{{ url_for('sleep_record_detail', date_str=prev_selected) }}">&#8249;</a>
+        <div class="days">
+            {% for d in strip_dates %}
+                <a class="day-btn{% if d.selected %} selected{% endif %}" href="{{ url_for('sleep_record_detail', date_str=d.iso) }}">
+                    <span>{{ d.day }}</span>
+                    <span>{{ d.weekday }}</span>
+                </a>
+            {% endfor %}
+        </div>
+        <a class="arrow" href="{{ url_for('sleep_record_detail', date_str=next_selected) }}">&#8250;</a>
+    </div>
+</div>
+
+<div class="sleep-page">
+    {% include "_slot_history.html" %}
+
+    <div class="temp-chart-title">체온 그래프</div>
+    <div class="temp-chart" id="slot-temp-chart">
+        <div class="chart-yaxis">
+            <span class="axis-title">온도</span>
+            <span>40</span>
+            <span>39</span>
+            <span>38</span>
+            <span>37</span>
+            <span>36</span>
+            <span>35</span>
+        </div>
+        <div class="chart-plot">
+            <div class="chart-bars" id="slot-temp-bars">
+                {% for point in history[slots[0]].temp_series %}
+                    <div class="bar-wrap"><div class="bar" style="height: {{ point.percent }}%;"></div></div>
+                {% endfor %}
+            </div>
+            <div class="chart-xaxis">
+                {% for point in history[slots[0]].temp_series %}
+                    <span>{{ point.label }}</span>
+                {% endfor %}
+                <span class="unit-label">분(minute)</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
