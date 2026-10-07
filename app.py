@@ -34,7 +34,7 @@ def backend_signup(email, password, name=None, phone=None, birthdate=None):
     return requests.post(
         f"{BACKEND_URL}/api/auth/signup",
         files=fields,
-        timeout=20
+        timeout=90
     )
 
 
@@ -42,7 +42,7 @@ def backend_login(email, password):
     return requests.post(
         f"{BACKEND_URL}/api/auth/login",
         data={"username": email, "password": password},
-        timeout=20
+        timeout=90
     )
 
 
