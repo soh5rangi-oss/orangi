@@ -237,6 +237,45 @@ def init_db():
     db.commit()
     db.close()
 
+def fetch_aws_risk(temp):
+    breath_status = camera.get("breath", "정상")
+
+    breathing_rate = camera.get("breathing_rate")
+    if breathing_rate is None:
+        breathing_rate = 30 if breath_status == "정상" else 18
+
+    movement_text = camera.get("movement", "정상")
+    if movement_text in ["거의 없음", "없음"]:
+        movement_value = "very low"
+    elif movement_text in ["적음", "낮음"]:
+        movement_value = "low"
+    else:
+        movement_value = "normal"
+
+    face_text = describe_face_state(camera)
+
+    situation_text = (
+        f"호흡 상태: {breath_status}, "
+        f"자세: {camera.get('posture', '정보 없음')}, "
+        f"얼굴 상태: {face_text}, "
+        f"수면 상태: {camera.get('sleep_state', '정보 없음')}"
+    )
+
+    payload = {
+        "temperature": temp,
+        "breathing_rate": breathing_rate,
+        "movement": movement_value,
+        "situation_text": situation_text
+    }
+
+    response = requests.post(
+        AWS_RISK_API_URL,
+        json=payload,
+        timeout=15
+    )
+    response.raise_for_status()
+
+    return response.json().get("risk_result")
 
 def get_risk(camera_state):
     if camera_state.get("blanket"):
@@ -405,32 +444,32 @@ def logout():
 @app.route("/home")
 @login_required
 def home():
-    risk_level, risk_text = get_risk(camera)
     temp, _, _, _ = get_current_temperature_state()
 
-    prompt = f"""
-유아 수면 상태
-
-얼굴 보임 : {camera['face_visible']}
-움직임 : {camera['movement']}
-이불이 얼굴을 덮음 : {camera['blanket']}
-
-부모에게 현재 상태를 한 문장으로 설명해줘.
-"""
+    risk_level, risk_text = get_risk(camera)
+    llm = "AI 분석 결과를 불러오는 중입니다."
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
-        llm = response.choices[0].message.content
-    except Exception:
-        llm = "AI 분석을 사용할 수 없습니다."
+        aws_result = fetch_aws_risk(temp)
+
+        if aws_result:
+            aws_level = aws_result.get("risk_level", "safe")
+
+            level_map = {
+                "safe": "normal",
+                "caution": "caution",
+                "danger": "danger"
+            }
+
+            risk_level = level_map.get(aws_level, "normal")
+            risk_text = aws_result.get("risk_label", "안전")
+            llm = aws_result.get(
+                "risk_text",
+                "현재 상태를 확인할 수 없습니다."
+            )
+
+    except requests.exceptions.RequestException:
+        llm = "AWS 위험 분석 서버에 연결할 수 없습니다."
 
     return render_template(
         "home.html",
