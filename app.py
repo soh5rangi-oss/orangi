@@ -22,6 +22,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 BACKEND_URL = "https://baby-monitor-backend.onrender.com"
 
+AWS_RISK_API_URL = (
+    "https://41ak752nn6.execute-api."
+    "ap-northeast-3.amazonaws.com/prod/risk"
+)
 
 def backend_signup(email, password, name=None, phone=None, birthdate=None):
     fields = {"email": (None, email), "password": (None, password)}
