@@ -1,4 +1,5 @@
 import calendar
+import json
 import os
 import sqlite3
 from collections import deque
@@ -253,25 +254,79 @@ def fetch_aws_risk(temp):
         movement_value = "normal"
 
     face_text = describe_face_state(camera)
+    posture = camera.get("posture", "정보 없음")
+    sleep_state = camera.get("sleep_state", "정보 없음")
 
     situation_text = (
         f"호흡 상태: {breath_status}, "
-        f"자세: {camera.get('posture', '정보 없음')}, "
+        f"자세: {posture}, "
         f"얼굴 상태: {face_text}, "
-        f"수면 상태: {camera.get('sleep_state', '정보 없음')}"
+        f"수면 상태: {sleep_state}"
     )
+
+    llm_result = None
+
+    try:
+        prompt = f"""
+다음 유아 수면 상태를 종합적으로 분석하여 위험도를 판단하세요.
+
+체온: {temp}도
+호흡 상태: {breath_status}
+호흡수: {breathing_rate}
+수면 상태: {sleep_state}
+자세: {posture}
+얼굴 상태: {face_text}
+움직임: {movement_text}
+
+반드시 다음 JSON 형식으로만 응답하세요.
+
+{{
+  "risk_level": "safe, caution, danger 중 하나",
+  "risk_label": "안전, 주의, 위험 중 하나",
+  "color": "green, yellow, red 중 하나",
+  "reasons": ["판단 근거"],
+  "risk_text": "현재 상태를 설명하는 한 문장",
+  "recommended_action": "보호자 권장 조치"
+}}
+"""
+
+        ai_response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "너는 유아 수면 안전 상태를 분석하는 보조 시스템이다. "
+                        "센서와 영상 분석 정보를 종합하여 보수적으로 판단한다."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            response_format={"type": "json_object"}
+        )
+
+        llm_result = json.loads(
+            ai_response.choices[0].message.content
+        )
+
+    except Exception:
+        llm_result = None
 
     payload = {
         "temperature": temp,
         "breathing_rate": breathing_rate,
         "movement": movement_value,
-        "situation_text": situation_text
+        "situation_text": situation_text,
+        "llm_result": llm_result
     }
 
     response = requests.post(
         AWS_RISK_API_URL,
         json=payload,
-        timeout=15
+        timeout=30
     )
     response.raise_for_status()
 
