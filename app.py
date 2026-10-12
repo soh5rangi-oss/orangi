@@ -1,12 +1,14 @@
 import calendar
 import os
 import sqlite3
+import threading
+import time
 from collections import deque
 from datetime import date, datetime, timedelta
 from functools import wraps
 
 import requests
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from openai import OpenAI
@@ -21,6 +23,11 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 BACKEND_URL = "https://baby-monitor-backend.onrender.com"
+
+CAMERA_KEY = os.environ.get("CAMERA_KEY", "dev-camera-key-change-me")
+latest_frame = None
+latest_frame_time = None
+frame_lock = threading.Lock()
 
 
 def backend_signup(email, password, name=None, phone=None, birthdate=None):
@@ -537,6 +544,51 @@ def sleep_pattern():
 @login_required
 def live_video():
     return render_template("live_video.html", slots=SLEEP_SLOTS)
+
+
+@app.route("/camera/frame", methods=["POST"])
+def camera_frame():
+    if request.headers.get("X-Camera-Key") != CAMERA_KEY:
+        abort(401)
+
+    global latest_frame, latest_frame_time
+    with frame_lock:
+        latest_frame = request.get_data()
+        latest_frame_time = time.time()
+    return "OK"
+
+
+def generate_mjpeg():
+    boundary = b"--frame"
+    while True:
+        with frame_lock:
+            frame = latest_frame
+        if frame:
+            yield (
+                boundary + b"\r\n"
+                b"Content-Type: image/jpeg\r\n"
+                b"Content-Length: " + str(len(frame)).encode() + b"\r\n\r\n"
+                + frame + b"\r\n"
+            )
+        time.sleep(0.1)
+
+
+@app.route("/video_feed")
+@login_required
+def video_feed():
+    return Response(
+        generate_mjpeg(),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
+
+
+@app.route("/camera/status")
+@login_required
+def camera_status():
+    with frame_lock:
+        age = time.time() - latest_frame_time if latest_frame_time else None
+    online = age is not None and age < 10
+    return {"online": online, "age_seconds": age}
 
 
 @app.route("/sleep-record")

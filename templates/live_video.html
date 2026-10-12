@@ -10,7 +10,10 @@
 
 <div class="video-page">
     <div class="video-section-title">실시간 모니터링</div>
-    <div class="video-box">카메라 연결 대기 중</div>
+    <div class="video-box" id="live-video-box">
+        <span id="live-video-placeholder">카메라 연결 대기 중</span>
+        <img id="live-video-stream" alt="실시간 영상" hidden>
+    </div>
 
     <div class="video-section-title">영상 돌려보기</div>
     <div class="slot-grid" id="video-slot-grid">
@@ -24,4 +27,35 @@
         <span>1hr</span><span>45m</span><span>30m</span><span>15m</span><span>now</span>
     </div>
 </div>
+
+<script>
+(function () {
+    var placeholder = document.getElementById("live-video-placeholder");
+    var stream = document.getElementById("live-video-stream");
+    var streaming = false;
+
+    function poll() {
+        fetch("{{ url_for('camera_status') }}")
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.online && !streaming) {
+                    stream.src = "{{ url_for('video_feed') }}?t=" + Date.now();
+                    stream.hidden = false;
+                    placeholder.hidden = true;
+                    streaming = true;
+                } else if (!data.online && streaming) {
+                    stream.hidden = true;
+                    stream.removeAttribute("src");
+                    placeholder.hidden = false;
+                    placeholder.textContent = "카메라 연결 대기 중";
+                    streaming = false;
+                }
+            })
+            .catch(function () {});
+    }
+
+    poll();
+    setInterval(poll, 5000);
+})();
+</script>
 {% endblock %}
