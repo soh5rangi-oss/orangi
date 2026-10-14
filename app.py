@@ -78,6 +78,10 @@ camera = {
     "sleep_state": "정상 수면 중",
     "posture": "정자세 유지"
 }
+LLM_INTERVAL_SECONDS = 60
+
+last_llm_run_at = 0
+latest_llm_result = None
 
 last_levels = {"temp": "normal", "risk": "normal"}
 
@@ -509,29 +513,26 @@ def home():
     temp, _, _, _ = get_current_temperature_state()
 
     risk_level, risk_text = get_risk(camera)
-    llm = "AI 분석 결과를 불러오는 중입니다."
+    llm = "센서 데이터 분석을 기다리는 중입니다."
 
-    try:
-        aws_result = fetch_aws_risk(temp)
+    # 1분마다 자동 분석된 최신 LLM 결과 사용
+    aws_result = latest_llm_result
 
-        if aws_result:
-            aws_level = aws_result.get("risk_level", "safe")
+    if aws_result:
+        aws_level = aws_result.get("risk_level", "safe")
 
-            level_map = {
-                "safe": "normal",
-                "caution": "caution",
-                "danger": "danger"
-            }
+        level_map = {
+            "safe": "normal",
+            "caution": "caution",
+            "danger": "danger"
+        }
 
-            risk_level = level_map.get(aws_level, "normal")
-            risk_text = aws_result.get("risk_label", "안전")
-            llm = aws_result.get(
-                "risk_text",
-                "현재 상태를 확인할 수 없습니다."
-            )
-
-    except requests.exceptions.RequestException:
-        llm = "AWS 위험 분석 서버에 연결할 수 없습니다."
+        risk_level = level_map.get(aws_level, "normal")
+        risk_text = aws_result.get("risk_label", "안전")
+        llm = aws_result.get(
+            "risk_text",
+            "현재 상태를 확인할 수 없습니다."
+        )
 
     return render_template(
         "home.html",
@@ -922,6 +923,26 @@ def settings_withdraw():
 @app.route("/update_camera", methods=["POST"])
 def update_camera():
     camera.update(request.json)
+
+    global last_llm_run_at
+    global latest_llm_result
+
+    camera.update(request.json)
+
+    now = time.time()
+    llm_due = now - last_llm_run_at >= LLM_INTERVAL_SECONDS
+
+    # 마지막 분석으로부터 1분이 지났을 때 LLM 실행
+    if llm_due:
+        last_llm_run_at = now
+
+        try:
+            current_temp = camera.get("temperature", 36.5)
+            latest_llm_result = fetch_aws_risk(current_temp)
+            print("LLM 자동 분석 완료:", latest_llm_result)
+
+        except requests.exceptions.RequestException as error:
+            print("LLM 자동 분석 실패:", error)
 
     if "temperature" in request.json:
         TEMP_HISTORY.append(camera["temperature"])
