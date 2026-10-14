@@ -650,6 +650,16 @@ def get_current_temperature_state():
 
     return temp, level, label, history
 
+
+@app.route("/temperature")
+@login_required
+def temperature():
+    temp, level, label, history = get_current_temperature_state()
+    return render_template(
+        "temperature.html", temp=temp, level=level, label=label, history=history
+    )
+
+
 @app.route("/temperature/data")
 @login_required
 def temperature_data():
@@ -677,10 +687,6 @@ def temperature_data():
         "label": label,
         "history": history
     }
-
-
-
-
 
 
 @app.route("/sleep-pattern")
