@@ -656,21 +656,37 @@ def get_current_temperature_state():
 
     return temp, level, label, history
 
-
-@app.route("/temperature")
-@login_required
-def temperature():
-    temp, level, label, history = get_current_temperature_state()
-    return render_template(
-        "temperature.html", temp=temp, level=level, label=label, history=history
-    )
-
-
 @app.route("/temperature/data")
 @login_required
 def temperature_data():
+    global last_llm_run_at
+    global latest_llm_result
+
     temp, level, label, history = get_current_temperature_state()
-    return {"temp": temp, "level": level, "label": label, "history": history}
+
+    now = time.time()
+
+    # 마지막 분석 후 60초가 지났으면 LLM 실행
+    if now - last_llm_run_at >= LLM_INTERVAL_SECONDS:
+        last_llm_run_at = now
+
+        try:
+            latest_llm_result = fetch_aws_risk(temp)
+            print("LLM 자동 분석 완료:", latest_llm_result)
+
+        except requests.exceptions.RequestException as error:
+            print("LLM 자동 분석 실패:", error)
+
+    return {
+        "temp": temp,
+        "level": level,
+        "label": label,
+        "history": history
+    }
+
+
+
+
 
 
 @app.route("/sleep-pattern")
