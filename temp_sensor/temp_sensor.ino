@@ -18,7 +18,7 @@ const char* USER_PASSWORD = "YOUR_LOGIN_PASSWORD";
 
 const char* DEVICE_ID = "mlx90614-1";
 
-const unsigned long SEND_INTERVAL_MS = 5000;        // 측정 전송 주기
+const unsigned long SEND_INTERVAL_MS = 1000;        // 측정 전송 주기
 const unsigned long TOKEN_LIFETIME_MS = 23UL * 60 * 60 * 1000; // 토큰 23시간마다 갱신 (서버 만료 24시간)
 
 // ---- 전역 상태 ----
