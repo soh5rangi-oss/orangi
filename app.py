@@ -5,7 +5,7 @@ import sqlite3
 import threading
 import time
 from collections import deque
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 
 import requests
@@ -555,13 +555,13 @@ def notifications():
     return render_template("notifications.html", grouped=grouped)
 
 
-def fetch_backend_temperature_chart():
+def fetch_backend_temperature_logs():
     token = session.get("access_token")
     if not token:
         return None
     try:
         resp = requests.get(
-            f"{BACKEND_URL}/api/temperature/chart",
+            f"{BACKEND_URL}/api/temperature",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10
         )
@@ -570,19 +570,72 @@ def fetch_backend_temperature_chart():
     return resp.json() if resp.ok else None
 
 
-def get_current_temperature_state():
-    chart = fetch_backend_temperature_chart()
+def bucket_temperature_history(logs, bucket_minutes=10, bucket_count=6):
+    """최근 센서 기록을 10분 간격 6개 구간으로 묶는다.
 
-    if chart and chart.get("temperatures"):
-        labels = chart["labels"][-6:]
-        temps = chart["temperatures"][-6:]
-        temp = temps[-1]
-        history = [
-            {"label": lbl, "value": val, "percent": temp_percent(val)}
-            for lbl, val in zip(labels, temps)
-        ]
+    백엔드 /api/temperature는 센서가 보낸 원본 기록을 그대로 반환하므로
+    (집계 없음), 센서 전송 주기가 짧아지면 '최근 1시간' 그래프가 실제로는
+    수 초 단위로만 보이는 문제가 있어 여기서 직접 10분 단위로 묶는다.
+    """
+    # 백엔드가 내려주는 measured_at은 UTC 기준이라 UTC로 맞춰 비교한다.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    window_start = now - timedelta(minutes=bucket_minutes * bucket_count)
+
+    parsed = []
+    for entry in logs or []:
+        try:
+            measured_at = datetime.fromisoformat(entry["measured_at"])
+            parsed.append((measured_at, float(entry["temperature"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    parsed.sort(key=lambda item: item[0])
+
+    bucket_ends = []
+    values = []
+    for i in range(bucket_count):
+        bucket_start = window_start + timedelta(minutes=bucket_minutes * i)
+        bucket_end = bucket_start + timedelta(minutes=bucket_minutes)
+        bucket_values = [temp for ts, temp in parsed if bucket_start <= ts < bucket_end]
+
+        bucket_ends.append(bucket_end)
+        values.append(bucket_values[-1] if bucket_values else None)
+
+    if all(v is None for v in values):
+        return []
+
+    # 데이터가 없는 앞쪽 구간은 뒤에서부터, 중간 공백은 직전 값으로 채운다
+    # (센서를 켠 지 얼마 안 됐을 때 그래프가 끊겨 보이지 않도록).
+    first_known = next(v for v in values if v is not None)
+    carry_forward = first_known
+    for i in range(bucket_count):
+        if values[i] is None:
+            values[i] = carry_forward
+        else:
+            carry_forward = values[i]
+
+    history = []
+    for bucket_end, value in zip(bucket_ends, values):
+        # 로컬 표시용 레이블이므로 다시 로컬 시간대로 변환해서 보여준다.
+        local_end = bucket_end.replace(tzinfo=timezone.utc).astimezone()
+        history.append({
+            "label": local_end.strftime("%H:%M"),
+            "value": value,
+            "percent": temp_percent(value)
+        })
+
+    return history
+
+
+def get_current_temperature_state():
+    logs = fetch_backend_temperature_logs()
+    history = bucket_temperature_history(logs) if logs else None
+
+    if logs:
+        temp = float(logs[-1]["temperature"])
     else:
         temp = camera.get("temperature", 36.5)
+
+    if not history:
         history = [
             {"label": lbl, "value": val, "percent": temp_percent(val)}
             for lbl, val in zip(TEMP_HISTORY_LABELS, TEMP_HISTORY)
