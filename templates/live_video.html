@@ -30,32 +30,30 @@
 
 <script>
 (function () {
+    var STREAM_URL = "https://esp32-cam-viewer.onrender.com/stream";
+    var RETRY_MS = 5000;
+
     var placeholder = document.getElementById("live-video-placeholder");
     var stream = document.getElementById("live-video-stream");
-    var streaming = false;
 
-    function poll() {
-        fetch("{{ url_for('camera_status') }}")
-            .then(function (res) { return res.json(); })
-            .then(function (data) {
-                if (data.online && !streaming) {
-                    stream.src = "{{ url_for('video_feed') }}?t=" + Date.now();
-                    stream.hidden = false;
-                    placeholder.hidden = true;
-                    streaming = true;
-                } else if (!data.online && streaming) {
-                    stream.hidden = true;
-                    stream.removeAttribute("src");
-                    placeholder.hidden = false;
-                    placeholder.textContent = "카메라 연결 대기 중";
-                    streaming = false;
-                }
-            })
-            .catch(function () {});
+    function connect() {
+        placeholder.textContent = "카메라 연결 중...";
+        stream.src = STREAM_URL + "?t=" + Date.now();
     }
 
-    poll();
-    setInterval(poll, 5000);
+    stream.addEventListener("load", function () {
+        stream.hidden = false;
+        placeholder.hidden = true;
+    });
+
+    stream.addEventListener("error", function () {
+        stream.hidden = true;
+        placeholder.hidden = false;
+        placeholder.textContent = "카메라 연결 대기 중";
+        setTimeout(connect, RETRY_MS);
+    });
+
+    connect();
 })();
 </script>
 {% endblock %}
