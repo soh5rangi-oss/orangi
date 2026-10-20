@@ -10,3 +10,5 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false
+      - key: CAMERA_UPLOAD_TOKEN
+        sync: false

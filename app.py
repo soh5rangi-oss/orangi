@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from functools import wraps
 
 import requests
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from openai import OpenAI
@@ -898,6 +898,37 @@ def settings_withdraw():
         return redirect(url_for("splash"))
 
     return render_template("settings_withdraw.html")
+
+
+# 노트북의 camera_relay.py가 ESP32-CAM 사진을 받아 올려 주는 최신 프레임
+CAMERA_UPLOAD_TOKEN = os.environ.get("CAMERA_UPLOAD_TOKEN")
+CAMERA_FRAME_MAX_AGE = 10
+latest_frame = {"data": None, "at": 0}
+
+
+@app.route("/camera/frame", methods=["POST"])
+def upload_camera_frame():
+    if not CAMERA_UPLOAD_TOKEN:
+        abort(503)
+    if request.headers.get("X-Camera-Token") != CAMERA_UPLOAD_TOKEN:
+        abort(403)
+
+    latest_frame["data"] = request.get_data()
+    latest_frame["at"] = time.time()
+    return "", 204
+
+
+@app.route("/camera/frame", methods=["GET"])
+@login_required
+def camera_frame():
+    if not latest_frame["data"] or time.time() - latest_frame["at"] > CAMERA_FRAME_MAX_AGE:
+        abort(404)
+
+    return Response(
+        latest_frame["data"],
+        mimetype="image/jpeg",
+        headers={"Cache-Control": "no-store"}
+    )
 
 
 @app.route("/update_camera", methods=["POST"])

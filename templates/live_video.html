@@ -30,20 +30,23 @@
 
 <script>
 (function () {
-    var STREAM_URL = "https://esp32-cam-viewer.onrender.com/stream";
+    // 노트북의 camera_relay.py가 서버로 올리는 최신 ESP32-CAM 사진을 연속으로 받아 영상처럼 표시
+    var CAPTURE_URL = "{{ url_for('camera_frame') }}";
     var RETRY_MS = 5000;
 
     var placeholder = document.getElementById("live-video-placeholder");
     var stream = document.getElementById("live-video-stream");
 
     function connect() {
-        placeholder.textContent = "카메라 연결 중...";
-        stream.src = STREAM_URL + "?t=" + Date.now();
+        stream.src = CAPTURE_URL + "?t=" + Date.now();
     }
+
+    placeholder.textContent = "카메라 연결 중...";
 
     stream.addEventListener("load", function () {
         stream.hidden = false;
         placeholder.hidden = true;
+        connect();
     });
 
     stream.addEventListener("error", function () {
