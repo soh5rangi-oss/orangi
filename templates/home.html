@@ -44,7 +44,7 @@
 
 <div class="danger-popup" id="danger-popup" role="alertdialog" aria-labelledby="danger-popup-title" hidden>
     <button type="button" class="danger-popup-close" id="danger-popup-close" aria-label="닫기">&times;</button>
-    <div class="danger-popup-title" id="danger-popup-title">🚨 위험 상태 감지</div>
+    <div class="danger-popup-title" id="danger-popup-title">🚨 고열 감지 (38℃ 이상)</div>
     <p>아기 상태를 바로 확인해 주세요.</p>
     <a class="danger-popup-btn" href="{{ url_for('first_aid') }}">응급처치 바로가기</a>
 </div>
@@ -56,12 +56,16 @@
     var riskText = document.getElementById("home-risk-text");
     var popup = document.getElementById("danger-popup");
     var dismissed = false;
+    var POPUP_TEMP = 38.0;
 
-    // 위험 단계에서 팝업 표시. 닫으면 위험이 풀렸다가 다시 위험이 될 때까지 숨김
     function updateRisk(level, text) {
         riskDot.className = "dot " + level;
         riskText.textContent = text;
-        if (level === "danger") {
+    }
+
+    // 체온이 38℃ 이상이면 팝업 표시. 닫으면 38℃ 아래로 내려갔다가 다시 오를 때까지 숨김
+    function updatePopup(temp) {
+        if (parseFloat(temp) >= POPUP_TEMP) {
             popup.hidden = dismissed;
         } else {
             dismissed = false;
@@ -74,7 +78,7 @@
         popup.hidden = true;
     });
 
-    updateRisk("{{ risk_level }}", riskText.textContent);
+    updatePopup(tempValueEl.textContent);
 
     function poll() {
         fetch("{{ url_for('temperature_data') }}", { credentials: "same-origin" })
@@ -83,6 +87,7 @@
                 if (!data) return;
                 tempValueEl.textContent = data.temp;
                 updateRisk(data.risk_level, data.risk_text);
+                updatePopup(data.temp);
             })
             .catch(function () {});
     }
