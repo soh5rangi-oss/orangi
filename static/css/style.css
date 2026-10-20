@@ -1215,3 +1215,32 @@ body {
     color: #999;
     cursor: pointer;
 }
+
+/* ---------- AI 수면 분석 (수면 패턴) ---------- */
+.ai-analysis {
+    margin-top: 14px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--color-navy);
+}
+
+.ai-analysis p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.ai-analysis ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #55637d;
+}
+
+.ai-analysis ul[hidden],
+.ai-analysis p[hidden] {
+    display: none;
+}
+
+.ai-analysis .ai-action {
+    margin-top: 8px;
+    color: #55637d;
+}

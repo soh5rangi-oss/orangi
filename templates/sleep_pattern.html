@@ -14,11 +14,54 @@
         <div class="row"><span class="label">자세</span><span class="value">{{ posture }}</span></div>
         <div class="row"><span class="label">얼굴 상태</span><span class="value">{{ face_state }}</span></div>
         <div class="row"><span class="label">움직임</span><span class="value">{{ movement }}</span></div>
-        <div class="row"><span class="label">위험도</span><span class="value {{ risk_level }}">{{ risk_text }}</span></div>
+        <div class="row"><span class="label">위험도</span><span class="value {{ risk_level }}" id="sleep-risk-value">{{ risk_text }}</span></div>
     </div>
 </div>
 
 <div class="sleep-body-white sleep-page">
+    <div class="slot-title">AI 수면 분석</div>
+    <div class="sleep-summary ai-analysis">
+        <p id="ai-summary">{{ analysis.summary }}</p>
+        <ul id="ai-reasons"{% if not analysis.reasons %} hidden{% endif %}>
+            {% for reason in analysis.reasons %}<li>{{ reason }}</li>{% endfor %}
+        </ul>
+        <p class="ai-action" id="ai-action"{% if not analysis.action %} hidden{% endif %}>권장 조치: <span>{{ analysis.action }}</span></p>
+    </div>
+
     {% include "_slot_history.html" %}
 </div>
+
+<script>
+(function () {
+    var riskValue = document.getElementById("sleep-risk-value");
+    var summary = document.getElementById("ai-summary");
+    var reasons = document.getElementById("ai-reasons");
+    var action = document.getElementById("ai-action");
+
+    // 최신 LLM 분석 결과를 주기적으로 받아 갱신 (LLM 자체는 서버에서 30초마다 실행)
+    function poll() {
+        fetch("{{ url_for('temperature_data') }}", { credentials: "same-origin" })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                riskValue.className = "value " + data.risk_level;
+                riskValue.textContent = data.risk_text;
+
+                summary.textContent = data.analysis.summary;
+                reasons.innerHTML = "";
+                data.analysis.reasons.forEach(function (reason) {
+                    var li = document.createElement("li");
+                    li.textContent = reason;
+                    reasons.appendChild(li);
+                });
+                reasons.hidden = data.analysis.reasons.length === 0;
+                action.querySelector("span").textContent = data.analysis.action;
+                action.hidden = !data.analysis.action;
+            })
+            .catch(function () {});
+    }
+
+    setInterval(poll, 5000);
+})();
+</script>
 {% endblock %}

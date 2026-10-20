@@ -385,6 +385,19 @@ def get_current_risk_state():
     return risk_level, risk_text, llm
 
 
+def get_llm_analysis():
+    aws_result = latest_llm_result or {}
+    reasons = aws_result.get("reasons") or []
+    if isinstance(reasons, str):
+        reasons = [reasons]
+
+    return {
+        "summary": aws_result.get("risk_text", "센서 데이터 분석을 기다리는 중입니다."),
+        "reasons": reasons,
+        "action": aws_result.get("recommended_action", "")
+    }
+
+
 def get_temp_level(temp):
     if temp >= 39.0:
         return "high", "고열"
@@ -775,18 +788,23 @@ def temperature_data():
         except requests.exceptions.RequestException as error:
             print("LLM 자동 분석 실패:", error)
 
+    risk_level, risk_text, _ = get_current_risk_state()
+
     return {
         "temp": temp,
         "level": level,
         "label": label,
-        "history": history
+        "history": history,
+        "risk_level": risk_level,
+        "risk_text": risk_text,
+        "analysis": get_llm_analysis()
     }
 
 
 @app.route("/sleep-pattern")
 @login_required
 def sleep_pattern():
-    risk_level, risk_text = get_risk(camera)
+    risk_level, risk_text, _ = get_current_risk_state()
 
     return render_template(
         "sleep_pattern.html",
@@ -797,6 +815,7 @@ def sleep_pattern():
         movement=camera.get("movement"),
         risk_level=risk_level,
         risk_text=risk_text,
+        analysis=get_llm_analysis(),
         slots=SLEEP_SLOTS,
         history=SLEEP_HISTORY
     )
@@ -1034,7 +1053,7 @@ def update_camera():
 
         try:
             current_temp = camera.get("temperature", 36.5)
-            latest_llm_result = fetch_aws_risk(current_temp)
+            latest_llm_result = fetch_aws_risk({"object_temp": current_temp})
             print("LLM 자동 분석 완료:", latest_llm_result)
 
         except requests.exceptions.RequestException as error:
