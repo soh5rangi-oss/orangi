@@ -345,6 +345,32 @@ def get_risk(camera_state):
     return "normal", "정상"
 
 
+def get_current_risk_state():
+    risk_level, risk_text = get_risk(camera)
+    llm = "센서 데이터 분석을 기다리는 중입니다."
+
+    # 1분마다 자동 분석된 최신 LLM 결과 사용
+    aws_result = latest_llm_result
+
+    if aws_result:
+        aws_level = aws_result.get("risk_level", "safe")
+
+        level_map = {
+            "safe": "normal",
+            "caution": "caution",
+            "danger": "danger"
+        }
+
+        risk_level = level_map.get(aws_level, "normal")
+        risk_text = aws_result.get("risk_label", "안전")
+        llm = aws_result.get(
+            "risk_text",
+            "현재 상태를 확인할 수 없습니다."
+        )
+
+    return risk_level, risk_text, llm
+
+
 def get_temp_level(temp):
     if temp >= 39.0:
         return "high", "고열"
@@ -505,28 +531,7 @@ def logout():
 @login_required
 def home():
     temp, _, _, _ = get_current_temperature_state()
-
-    risk_level, risk_text = get_risk(camera)
-    llm = "센서 데이터 분석을 기다리는 중입니다."
-
-    # 1분마다 자동 분석된 최신 LLM 결과 사용
-    aws_result = latest_llm_result
-
-    if aws_result:
-        aws_level = aws_result.get("risk_level", "safe")
-
-        level_map = {
-            "safe": "normal",
-            "caution": "caution",
-            "danger": "danger"
-        }
-
-        risk_level = level_map.get(aws_level, "normal")
-        risk_text = aws_result.get("risk_label", "안전")
-        llm = aws_result.get(
-            "risk_text",
-            "현재 상태를 확인할 수 없습니다."
-        )
+    risk_level, risk_text, llm = get_current_risk_state()
 
     return render_template(
         "home.html",
@@ -681,11 +686,15 @@ def temperature_data():
         except requests.exceptions.RequestException as error:
             print("LLM 자동 분석 실패:", error)
 
+    risk_level, risk_text, _ = get_current_risk_state()
+
     return {
         "temp": temp,
         "level": level,
         "label": label,
-        "history": history
+        "history": history,
+        "risk_level": risk_level,
+        "risk_text": risk_text
     }
 
 

@@ -19,7 +19,7 @@
         <div class="risk">
             🌙👶
             <div class="risk-label">
-                <span class="dot {{ risk_level }}"></span> 위험도 : {{ risk_text }}
+                <span class="dot {{ risk_level }}" id="home-risk-dot"></span> 위험도 : <span id="home-risk-text">{{ risk_text }}</span>
             </div>
         </div>
     </div>
@@ -42,14 +42,48 @@
     <a href="{{ url_for('logout') }}">로그아웃</a>
 </div>
 
+<div class="danger-popup" id="danger-popup" role="alertdialog" aria-labelledby="danger-popup-title" hidden>
+    <button type="button" class="danger-popup-close" id="danger-popup-close" aria-label="닫기">&times;</button>
+    <div class="danger-popup-title" id="danger-popup-title">🚨 위험 상태 감지</div>
+    <p>아기 상태를 바로 확인해 주세요.</p>
+    <a class="danger-popup-btn" href="{{ url_for('first_aid') }}">응급처치 바로가기</a>
+</div>
+
 <script>
 (function () {
     var tempValueEl = document.getElementById("home-temp-value");
+    var riskDot = document.getElementById("home-risk-dot");
+    var riskText = document.getElementById("home-risk-text");
+    var popup = document.getElementById("danger-popup");
+    var dismissed = false;
+
+    // 위험 단계에서 팝업 표시. 닫으면 위험이 풀렸다가 다시 위험이 될 때까지 숨김
+    function updateRisk(level, text) {
+        riskDot.className = "dot " + level;
+        riskText.textContent = text;
+        if (level === "danger") {
+            popup.hidden = dismissed;
+        } else {
+            dismissed = false;
+            popup.hidden = true;
+        }
+    }
+
+    document.getElementById("danger-popup-close").addEventListener("click", function () {
+        dismissed = true;
+        popup.hidden = true;
+    });
+
+    updateRisk("{{ risk_level }}", riskText.textContent);
 
     function poll() {
         fetch("{{ url_for('temperature_data') }}", { credentials: "same-origin" })
             .then(function (res) { return res.ok ? res.json() : null; })
-            .then(function (data) { if (data) tempValueEl.textContent = data.temp; })
+            .then(function (data) {
+                if (!data) return;
+                tempValueEl.textContent = data.temp;
+                updateRisk(data.risk_level, data.risk_text);
+            })
             .catch(function () {});
     }
 
