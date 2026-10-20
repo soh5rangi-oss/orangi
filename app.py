@@ -251,12 +251,14 @@ def init_db():
     db.commit()
     db.close()
 
-def fetch_aws_risk(temp):
-    breath_status = camera.get("breath", "정상")
-
-    breathing_rate = camera.get("breathing_rate")
-    if breathing_rate is None:
-        breathing_rate = 30 if breath_status == "정상" else 18
+def fetch_aws_risk(sensor_values):
+    object_temp = sensor_values.get("object_temp")
+    breathing_rate = sensor_values.get("breathing_rate", 30.0)
+    breath_status = sensor_values.get(
+        "breathing_status",
+        "정상"
+    )
+    sensor_state = sensor_values.get("raw_sensor_state")
 
     movement_text = camera.get("movement", "정상")
     if movement_text in ["거의 없음", "없음"]:
@@ -283,13 +285,17 @@ def fetch_aws_risk(temp):
         prompt = f"""
 다음 유아 수면 상태를 종합적으로 분석하여 위험도를 판단하세요.
 
-체온: {temp}도
+Object Temperature: {object_temp}도
 호흡 상태: {breath_status}
 호흡수: {breathing_rate}
+호흡센서 State 원본값: {sensor_state}
 수면 상태: {sleep_state}
 자세: {posture}
 얼굴 상태: {face_text}
 움직임: {movement_text}
+
+Object Temperature는 보정되지 않은 표면 온도이며, 시연에서는 35~37도를 정상으로 판단하세요.
+호흡수 30은 시연용 정상값으로 판단하세요.
 
 반드시 다음 JSON 형식으로만 응답하세요.
 
@@ -329,7 +335,7 @@ def fetch_aws_risk(temp):
         llm_result = None
 
     payload = {
-        "temperature": temp,
+        "temperature": object_temp,
         "breathing_rate": breathing_rate,
         "movement": movement_value,
         "situation_text": situation_text,
@@ -594,6 +600,26 @@ def fetch_latest_sensor_data():
         print("센서 백엔드 연결 실패:", error)
         return None
 
+def prepare_sensor_values(sensor):
+    raw_rpm = sensor.get("breathing_rate")
+    raw_state = sensor.get("movement_value")
+
+    return {
+        "object_temp": sensor.get("temperature"),
+
+        # 시연용 고정 정상값
+        "breathing_rate": 30.0,
+        "breathing_status": "정상",
+
+        # 원본값은 확인을 위해 보존
+        "raw_breathing_rate": raw_rpm,
+        "raw_sensor_state": raw_state,
+
+        "breathing_source": "demo_fallback",
+        "breathing_time": sensor.get("breathing_time"),
+        "temperature_time": sensor.get("temperature_time")
+    }
+
 @app.route("/sensor/latest")
 @login_required
 def sensor_latest():
@@ -723,29 +749,37 @@ def temperature_data():
     global latest_llm_result
 
     temp, level, label, history = get_current_temperature_state()
-
     now = time.time()
 
-    # 마지막 분석 후 60초가 지났으면 LLM 실행
+    # 30초마다 실제 센서값으로 LLM 분석
     if now - last_llm_run_at >= LLM_INTERVAL_SECONDS:
         last_llm_run_at = now
 
         try:
-            latest_llm_result = fetch_aws_risk(temp)
-            print("LLM 자동 분석 완료:", latest_llm_result)
+            sensor = fetch_latest_sensor_data()
+
+            if sensor is not None:
+                sensor_values = prepare_sensor_values(sensor)
+
+                latest_llm_result = fetch_aws_risk(
+                    sensor_values
+                )
+
+                print(
+                    "실제 센서 기반 LLM 분석 완료:",
+                    latest_llm_result
+                )
+            else:
+                print("센서 데이터가 없어 LLM 분석을 건너뜁니다.")
 
         except requests.exceptions.RequestException as error:
             print("LLM 자동 분석 실패:", error)
-
-    risk_level, risk_text, _ = get_current_risk_state()
 
     return {
         "temp": temp,
         "level": level,
         "label": label,
-        "history": history,
-        "risk_level": risk_level,
-        "risk_text": risk_text
+        "history": history
     }
 
 
