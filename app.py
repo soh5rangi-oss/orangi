@@ -24,6 +24,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 BACKEND_URL = "https://baby-monitor-backend.onrender.com"
 
+SENSOR_LATEST_API_URL = (
+    f"{BACKEND_URL}/api/sensor/latest"
+)
+
+CAMERA_STREAM_API_URL = (
+    f"{BACKEND_URL}/api/video/stream"
+)
+
 AWS_RISK_API_URL = (
     "https://41ak752nn6.execute-api."
     "ap-northeast-3.amazonaws.com/prod/risk"
@@ -554,6 +562,49 @@ def notifications():
             grouped.append((group, items))
     return render_template("notifications.html", grouped=grouped)
 
+def fetch_latest_sensor_data():
+    token = session.get("access_token")
+
+    if not token:
+        return None
+
+    try:
+        response = requests.get(
+            SENSOR_LATEST_API_URL,
+            headers={
+                "Authorization": f"Bearer {token}"
+            },
+            timeout=10
+        )
+
+        if not response.ok:
+            print(
+                "최신 센서 데이터 조회 실패:",
+                response.status_code,
+                response.text
+            )
+            return None
+
+        sensor = response.json()
+        print("최신 센서 데이터:", sensor)
+
+        return sensor
+
+    except requests.exceptions.RequestException as error:
+        print("센서 백엔드 연결 실패:", error)
+        return None
+
+@app.route("/sensor/latest")
+@login_required
+def sensor_latest():
+    sensor = fetch_latest_sensor_data()
+
+    if sensor is None:
+        return {
+            "message": "최신 센서 데이터를 가져오지 못했습니다."
+        }, 502
+
+    return sensor
 
 def fetch_backend_temperature_logs():
     token = session.get("access_token")
