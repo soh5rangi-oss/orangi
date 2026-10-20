@@ -72,7 +72,7 @@ camera = {
     "sleep_state": "정상 수면 중",
     "posture": "정자세 유지"
 }
-LLM_INTERVAL_SECONDS = 60
+LLM_INTERVAL_SECONDS = 30
 
 last_llm_run_at = 0
 latest_llm_result = None
